@@ -1,0 +1,65 @@
+pipeline {
+    agent any
+
+    tools { go '1.24.1' }
+
+    environment {
+        REPO = 'https://github.com/wakeward/demo-api-app.git'
+        IMAGE_TAG = 'wakeward/demo-api-app'
+        DOCKERHUB = 'wakeward-dockerhub'
+    }
+
+    stages {
+        stage('checkout source code') {
+            steps {
+                git (url: "${REPO}", branch: 'main')
+            }
+        }
+
+        stage('building go binary') {
+            steps {
+                echo 'Building go binary...'
+                sh "go build -o demo-api -ldflags='-w -s' ."
+            }
+        }
+
+        stage('run unit tests') {
+            steps{
+                script {
+                    echo 'Running unit tests...'
+                    sh "go test ./..."
+                }
+            }
+        }
+
+        stage('build container image') {
+            steps{
+                script {
+                    echo 'Building container image...'
+                    docker_image = docker.build("${IMAGE_TAG}:${env.BUILD_TAG}")
+                }
+            }
+        }
+
+        stage('push container image') {
+            steps{
+                script {
+                    echo 'Pushing container image to Dockerhub...'
+                    withDockerRegistry(url: '', credentialsId: "${DOCKERHUB}") {
+                        docker_image.push()
+                    }
+                }
+
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment completed successfully.'
+        }
+        failure {
+            echo 'Deployment failed. Please check the logs.'
+        }
+    }
+}
