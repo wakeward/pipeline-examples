@@ -12,7 +12,7 @@ Each CI/CD tool has its own folder with an example pipeline for:
 4. Building the `demo-api-app` container image
 5. Pushing the `demo-api-app` container image to [DockerHub](https://hub.docker.com/repository/docker/wakeward/demo-api-app/general)
 
-Alongside this pipeline defintion are examples for:
+Alongside this pipeline definition are examples for:
 
 - Executing malicious code (reverse shell)
 - Dumping any credentials used by the pipeline
