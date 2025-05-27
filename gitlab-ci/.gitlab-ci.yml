@@ -1,0 +1,43 @@
+# Demo API app Pipeline
+
+image: golang:latest
+
+stages:
+  - build-go
+  - test-go
+  - docker
+
+build-job:
+  stage: build-go
+  script:
+    - mkdir -p app
+    - go build -o app/demo-api -ldflags='-w -s' .
+  artifacts:
+    untracked: false
+    when: on_success
+    access: all
+    expire_in: 30 days
+    paths:
+      - app
+
+unit-test:
+  stage: test-go
+  script:
+    - go test ./...
+
+docker-build:
+  image: docker:cli
+  stage: docker
+  services:
+    - docker:dind
+  variables:
+    DOCKER_IMAGE_NAME: wakeward/demo-api-app:$CI_COMMIT_SHA
+  before_script:
+    - echo "$DOCKER_REGISTRY_PASSWORD" | docker login -u "$DOCKER_REGISTRY_USER" --password-stdin
+  script:
+    - docker build --pull -t "$DOCKER_IMAGE_NAME" .
+    - docker push "$DOCKER_IMAGE_NAME"
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      exists:
+        - Dockerfile
