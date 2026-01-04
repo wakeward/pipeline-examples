@@ -1,0 +1,59 @@
+	---
+name: Demo API App CI
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+  pull_request:
+    branches: [main]
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+jobs:
+  build-test:
+    name: Build and Unit Test Demo API App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Build Binary
+        run: go build -o demo-api main.go
+        env:
+          SECRET_TOKEN: ${{ secrets.SECRET_TOKEN }}
+
+      - name: Run Unit Tests
+        run: |
+          go test -v ./...
+   docker-build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ vars.DOCKER_USERNAME }}/demo-api-app:${{ github.sha }}
