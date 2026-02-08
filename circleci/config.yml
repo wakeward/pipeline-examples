@@ -1,0 +1,49 @@
+version: 2.1
+# Enable orbs for Go and Docker
+orbs:
+  go: circleci/go@3.0.3
+  docker: circleci/docker@3.0.1
+
+jobs:
+  build-test:
+    executor:
+      name: go/default
+      tag: '1.24'
+    steps:
+      - checkout
+      - go/with-cache:
+          steps:
+            - go/mod-download
+            - go/test:
+                build_ldflags: "-s -w"
+                packages: ./...
+                failfast: true
+                no_output_timeout: 15m
+                timeout: 15m
+
+  docker-build-push:
+    executor: docker/docker
+    steps:
+      - setup_remote_docker
+      - checkout
+      - docker/check
+      - docker/build:
+          image: $DOCKER_USERNAME/demo-api-app
+          tag: $CIRCLE_SHA1
+      - docker/push:
+          image: $DOCKER_USERNAME/demo-api-app
+          tag: $CIRCLE_SHA1
+
+workflows:
+  demo-api-workflow:
+    jobs:
+      - build-test:
+          filters:
+            branches:
+              only: main
+      - docker-build-push:
+          requires:
+            - build-test
+          filters:
+            branches:
+              only: main
